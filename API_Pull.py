@@ -18,9 +18,9 @@ Eldora_event_url = "https://api.parkwhiz.com/v4/venues/478490/events/?pretty=Tru
 
 Copper_event_url = "https://api.parkwhiz.com/v4/venues/448854/events/?pretty=True&fields=event::default,event:availability,site_url"
 
-quote_url = "https://api.parkwhiz.com/v4/quotes/?pretty=True"
+quote_url = "https://api.parkwhiz.com/v4/quotes/"
 
-leftover_url = "&capabilities=capture_plate:always&option_types=bookable%20non_bookable%20on_demand&envelope=true"
+leftover_url = "&capabilities=capture_plate:always&option_types=bookable%20non_bookable%20on_demand"
 
 params = open('params.txt', 'r')
 
@@ -60,5 +60,50 @@ while True:
 
 bookings = pd.DataFrame(events)
 
-# Obtain quote ID from event ID
-#q = requests.get(quote_url + '?' + 'q=event_id:' + event_id + lefover_url)
+bookings['name'] += ' ' + bookings.groupby('name').cumcount().map({0:'9am', 1:'11am', 2: '1:30pm', 3: '2:30pm'})
+
+#Obtain quote ID from event ID
+
+# Initialize the dataframe
+col_names = ['id', 'name']
+quote_w_id = pd.DataFrame(columns=col_names)
+
+# Pull event id from bookings to be used in loop
+event_id = bookings['id']
+
+# TODO - Need to create a loop to grab each pulled ID number, and if it's booked, return an empty
+# quote id, but keep the name. If there is a quote number, add it to the dataframe
+# I was able to use the event ID 1075288 and pull a quote id from that, but had to get rid of the loop
+# to make it work
+quote_page = 1
+#while True:
+
+    # Create a url to get a quote id from a list of bookable event ids
+    #y=0
+quote = requests.get(quote_url + '?q=event_id:' + str(1075288) + leftover_url + '&per_page=50' + '&page=' + str(quote_page))
+q = quote.json()
+
+    # search through each possible event id until there is none left
+    #if not q:
+        #break
+
+    # Trying to search through the json response to look for null data (means the event is booked)
+    # If the event has data within the response, that means it can be booked
+    #if quote.get("'data':[]", None):
+
+        # Otherwise add the quote id and the event name to the dataframe
+for z in range(len(q)):
+    quote_w_id.loc[z + (page - 1) * 50, 'id'] = q[z]['purchase_options'][0]['id']
+    name = quote_w_id.loc[z + (page - 1) * 50, 'name'] = q[z]['_embedded']['pw:event']['name']
+            #available = quote_w_id.loc[x + (page - 1) * 50, 'count'] = b[x]['availability']['available']
+
+    # If the data:[] is empty, put none
+    #else:
+        #quote_w_id[x]=None
+
+    #increment the page
+    #quote_page += 1
+    #y += 1
+
+# Create a dataframe containing quote_ids, event names
+quotes_booking = pd.DataFrame(quote_w_id)
