@@ -75,39 +75,36 @@ event_id = bookings['id']
 # quote id, but keep the name. If there is a quote number, add it to the dataframe
 # I was able to use the event ID 1075288 and pull a quote id from that, but had to get rid of the loop
 # to make it work
-pattern = r'\w+(?=": [\S\s][^:]+{})'.format("'data':[]")
-quote_page = 1
-while True:
 
-    # Create a url to get a quote id from a list of bookable event ids
-    y=0
-    quote = requests.get(quote_url + '?q=event_id:' + str(event_id[y]) + leftover_url + '&per_page=50' + '&page=' + str(quote_page))
+# Create a url to get a quote id from a list of bookable event ids
+y=0
+for i in range(590):
+    quote = requests.get(quote_url + '?q=event_id:' + str(event_id[y]) + leftover_url)
     q = quote.json()
     print(event_id[y])
 
     # search through each possible event id until there is none left
-    if not q:
-        break
+    #if not q:
+    #    break
 
     # Trying to search through the json response to look for null data (means the event is booked)
     # If the event has data within the response, that means it can be booked
 
-    if q.text([], None):
+    if q == []:
+        print('Booked')
 
+    else:
         # Otherwise add the quote id and the event name to the dataframe
         for z in range(len(q)):
-            quote_w_id.loc[z + (page - 1) * 50, 'id'] = q[z]['purchase_options'][0]['id']
+            quote_w_id.loc[z, 'id'] = q[z]['purchase_options'][0]['id']
             print('id added')
-            name = quote_w_id.loc[z + (page - 1) * 50, 'name'] = q[z]['_embedded']['pw:event']['name']
+            name = quote_w_id.loc[z, 'name'] = q[z]['_embedded']['pw:event']['name']
             print('name added')
             #available = quote_w_id.loc[x + (page - 1) * 50, 'count'] = b[x]['availability']['available']
 
-    # If the data:[] is empty, put none
-    else:
-        quote_w_id['id']=None
-
     #increment the page
-    quote_page += 1
+    page += 1
+    y += 1
 
 
 # Create a dataframe containing quote_ids, event names
