@@ -62,12 +62,12 @@ bookings = pd.DataFrame(events)
 
 bookings['name'] += ' ' + bookings.groupby('name').cumcount().map({0:'9am', 1:'11am', 2: '1:30pm', 3: '2:30pm'})
 
-#Obtain quote ID from event ID
+# Obtain quote ID from event ID
 
 # Initialize the dataframe
-col_names = ['id', 'name']
-quote_w_id = pd.DataFrame(columns=col_names)
-
+column_names = ['id']
+quote_w_id = pd.DataFrame(columns=column_names)
+booked_events = pd.DataFrame(columns=column_names)
 # Pull event id from bookings to be used in loop
 event_id = bookings['id']
 
@@ -77,35 +77,37 @@ event_id = bookings['id']
 # to make it work
 
 # Create a url to get a quote id from a list of bookable event ids
-y=0
-for i in range(590):
+# y is the single event_id which will be looped
+y = 0
+for i in range(60):
     quote = requests.get(quote_url + '?q=event_id:' + str(event_id[y]) + leftover_url)
     q = quote.json()
     print(event_id[y])
 
-    # search through each possible event id until there is none left
-    #if not q:
-    #    break
+    # Able to determine if an event is either booked or not
+    if not q:
+        # TODO - if an event is booked, grab the event id and store it in a df
 
-    # Trying to search through the json response to look for null data (means the event is booked)
-    # If the event has data within the response, that means it can be booked
-
-    if q == []:
-        print('Booked')
+        # for i in range(len(q)):
+        #    booked_events.loc[i +y, 'id'] = str(event_id[y]) + ' booked'
+        print('booked')
 
     else:
-        # Otherwise add the quote id and the event name to the dataframe
+        # If event is able to be booked add the quote id and the event id to the dataframe
         for z in range(len(q)):
-            quote_w_id.loc[z, 'id'] = q[z]['purchase_options'][0]['id']
+            quote_w_id.loc[z + y, 'quote id'] = q[z]['purchase_options'][0]['id']
             print('id added')
-            name = quote_w_id.loc[z, 'name'] = q[z]['_embedded']['pw:event']['name']
-            print('name added')
-            #available = quote_w_id.loc[x + (page - 1) * 50, 'count'] = b[x]['availability']['available']
+            quote_w_id.loc[z + y, 'id'] = q[z]['_embedded']['pw:event']['id']
 
-    #increment the page
-    page += 1
+    # y is set to increment through each event_id, this is imperitive as it allows to add
+    # to dataframe (quote_w_id) and loop through each event_id
     y += 1
-
 
 # Create a dataframe containing quote_ids, event names
 quotes_booking = pd.DataFrame(quote_w_id)
+
+# This df contains the event name, id, quote id, and availability count
+df_booking = pd.merge(quotes_booking, events, on='id')
+
+# This df will contain the booked events
+#booked_events= pd.DataFrame(booked_events)
