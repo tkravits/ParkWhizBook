@@ -24,6 +24,12 @@ leftover_url = "&capabilities=capture_plate:always&option_types=bookable%20non_b
 
 params = open('params.txt', 'r')
 
+# Open and read the list of dates I want to book
+with open('dates.json', 'r') as file:
+    data=file.read()
+
+dates = json.loads(data)
+
 # sending get request and saving the response as response object
 r = requests.post(url=auth_url, params=params.read())
 
