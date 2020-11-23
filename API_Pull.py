@@ -12,7 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 auth_url = "https://api.parkwhiz.com/v4/oauth/token"
 
-booking_url = "https://api.parkwhiz.com/v4/bookings/?pretty=true"
+booking_url = "https://api.parkwhiz.com/v4/bookings/?final_price=0.0"
 
 Eldora_event_url = "https://api.parkwhiz.com/v4/venues/478490/events/?pretty=True&fields=event::default,event:availability,site_url"
 
@@ -29,6 +29,7 @@ with open('dates.json', 'r') as file:
     data=file.read()
 
 dates = json.loads(data)
+df_dates = pd.read_json('dates.json').rename(columns={'dates':'name'})
 
 # sending get request and saving the response as response object
 r = requests.post(url=auth_url, params=params.read())
@@ -77,11 +78,6 @@ booked_events = pd.DataFrame(columns=column_names)
 # Pull event id from bookings to be used in loop
 event_id = bookings['id']
 
-# TODO - Need to create a loop to grab each pulled ID number, and if it's booked, return an empty
-# quote id, but keep the name. If there is a quote number, add it to the dataframe
-# I was able to use the event ID 1075288 and pull a quote id from that, but had to get rid of the loop
-# to make it work
-
 # Create a url to get a quote id from a list of bookable event ids
 # y is the single event_id which will be looped
 y = 0
@@ -110,10 +106,22 @@ for i in range(60):
     y += 1
 
 # Create a dataframe containing quote_ids, event names
-quotes_booking = pd.DataFrame(quote_w_id)
+df_quotes_booking = pd.DataFrame(quote_w_id)
 
 # This df contains the event name, id, quote id, and availability count
-df_booking = pd.merge(quotes_booking, events, on='id')
+df_avail_quote_id = pd.merge(df_quotes_booking, events, on='id')
+
+# Merge the df based on the dates that I put in (dates.json) and the available booked parking
+df_parking_avail = pd.merge(df_avail_quote_id, df_dates, on='name')
 
 # This df will contain the booked events
 #booked_events= pd.DataFrame(booked_events)
+
+# Loop through the quote_id dataframe and book parking based on the available date
+y = 0
+for i in range(5):
+    booking = requests.post(booking_url + '&quote_id=' + str(df_parking_avail['quote id'][y]) + '&plate_number=027zzz', headers=headers)
+    b = booking.json()
+
+    if booking.ok:
+        break
