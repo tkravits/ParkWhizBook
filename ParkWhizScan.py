@@ -67,42 +67,46 @@ def createDesiredParkingDataFrame():
 
 df_desired_parking = createDesiredParkingDataFrame()
 
-
 def getAvailabilityAndBook():
     def getAvailability():
-        if df_desired_parking['Book_Status'] is False:
-            # Create a url to get a quote id from a list of bookable event ids
-            quote = requests.get(quote_url + '?q=event_id:' + str(df_desired_parking['id'][y]) + leftover_url)
-            q = quote.json()
-            print(df_desired_parking['id'][y])
+        y = 0
+        # Create a url to get a quote id from a list of bookable event ids
+        quote = requests.get(quote_url + '?q=event_id:' + str(df_desired_parking['id'][y]) + leftover_url)
+        q = quote.json()
+        print(df_desired_parking['id'][y])
 
-            if quote.ok:
-                # If event is able to be booked add the quote id and the event id to the dataframe
-                for z in range(len(q)):
-                    df_desired_parking.loc[z + y, 'quote id'] = q[z]['purchase_options'][0]['id']
-                    print('id added')
-                    df_desired_parking.loc[z + y, 'id'] = q[z]['_embedded']['pw:event']['id']
+        if quote.ok:
+            # If event is able to be booked add the quote id and the event id to the dataframe
+            for z in range(len(q)):
+                df_desired_parking.loc[z + y, 'quote id'] = q[z]['purchase_options'][0]['id']
+                print('id added')
+                df_desired_parking.loc[z + y, 'id'] = q[z]['_embedded']['pw:event']['id']
+                df_desired_parking.loc[z + y, ['Book_Status']] = True
+
+        if df_desired_parking['Book_Status'] is True:
             return getAvailability()
 
-        def BookEvent():
-                # If quote id is successfully pulled, move on to book the event
-                for w in range(len(q)):
-                    booking = requests.post(
-                        booking_url + '&quote_id=' + str(df_desired_parking['quote id'][y]) + '&plate_number=027zzz',
-                        headers=headers)
-                    b = booking.json()
-                    # If the booking goes through, add the booking id to a dataframe and remove the booking from the df that
-                    # is looped
-                if booking.ok:
-                    print(df_desired_parking['name'] + ' booked')
-                    df_desired_parking.loc(['Book_Status'], True)
-                    # This dataframe will check to make sure I don't book more than 7 parking spaces
-                    df_booked_parking.loc[w + y, 'name'] = q[w]['_embedded']['pw:event']['id']
-                    # This drops the booking so it doesn't get rebooked again
-                    df_desired_parking.loc(['Book_Status'], True)
+    def BookEvent():
+        y = 0
+        if df_desired_parking['quote id'].notna() & df_desired_parking['Book_Status'] is False:
+             # If quote id is successfully pulled, move on to book the event
+            for w in range(len(q)):
+                booking = requests.post(
+                    booking_url + '&quote_id=' + str(df_desired_parking['quote id'][y]) + '&plate_number=027zzz',
+                    headers=headers)
+                b = booking.json()
+                # If the booking goes through, add the booking id to a dataframe and remove the booking from the df that
+                # is looped
+            if booking.ok:
+                print(df_desired_parking['name'] + ' booked')
+                df_desired_parking.loc(['Book_Status'], True)
+                # This dataframe will check to make sure I don't book more than 7 parking spaces
+                df_booked_parking.loc[w + y, 'name'] = q[w]['_embedded']['pw:event']['id']
+                # This drops the booking so it doesn't get rebooked again
+                df_desired_parking.loc(['Book_Status'], True)
+        return BookEvent()
 
     if df_desired_parking['Book_Status'] is True:
         return df_desired_parking
-
 
 df_booked_parking = getAvailabilityAndBook()
