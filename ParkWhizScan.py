@@ -69,7 +69,7 @@ df_desired_parking = createDesiredParkingDataFrame()
 
 def getAvailability():
     y = 0
-    for i in range(9): # Need to get a max count from df to loop so I don't have to manually put a number in
+    for i in range(len(df_desired_parking.index)): # Need to get a max count from df to loop so I don't have to manually put a number in
         # Create a url to get a quote id from a list of bookable event ids
         quote = requests.get(quote_url + '?q=event_id:' + str(df_desired_parking['id'][y]) + leftover_url)
         q = quote.json()
@@ -84,7 +84,7 @@ def getAvailability():
                 df_desired_parking.loc[z + y, 'quote id'] = q[z]['purchase_options'][0]['id']
                 print('id added')
                 df_desired_parking.loc[z + y, 'id'] = q[z]['_embedded']['pw:event']['id']
-                df_desired_parking.loc[z + y, 'Book_Status'] = True
+                #df_desired_parking.loc[z + y, 'Book_Status'] = True
 
         y += 1
     return df_desired_parking
@@ -92,8 +92,10 @@ def getAvailability():
 
 def BookEvent(df):
     y = 0
-    for i in range(9):
-        if df['Book_Status'][y] == True:
+    mask = df['quote id'].notna() & ~df['Book_Status']
+    df['book it'] = np.where(mask, True, False)
+    for i in range(len(df_desired_parking.index)):
+        if df['book it'][y] == True:
             # If quote id is successfully pulled, move on to book the event
                 booking = requests.post(
                     booking_url + '&quote_id=' + str(df['quote id'][y]) + '&plate_number=027zzz',
@@ -102,9 +104,8 @@ def BookEvent(df):
             # If the booking goes through, add the booking id to a dataframe and remove the booking from the df that
             # is looped
                 if booking.ok:
-                    print(df['name'] + ' booked')
+                    print(df['name'][y] + ' booked')
                     df.loc[y, 'Book_Status'] = True
-                    df.loc[y, 'quote id'] = b[y]['_embedded']['pw:event']['id']
 
         y += 1
     return df
