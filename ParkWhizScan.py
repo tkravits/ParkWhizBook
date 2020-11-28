@@ -33,9 +33,10 @@ print("Access Token = {}\n".format(access_token))
 headers = {'Authorization': 'Bearer ' + access_token}
 
 
-def getAllEventIds(df):
+def getAllEventIds():
     # Pull list of all parking from Eldora and grab the unique event_id
     page = 1
+    df = pd.DataFrame(columns=['id','name'])
     while True:
 
         # get list of bookings from parkwhiz
@@ -57,7 +58,7 @@ def getAllEventIds(df):
 
 
 # Create a df of all parking for Eldora
-event_df = getAllEventIds(df)
+event_df = getAllEventIds()
 event_df['name'] += ' ' + event_df.groupby('name').cumcount().map({0: '9am', 1: '11am', 2: '1:30pm', 3: '2:30pm'})
 
 # Merge the dates I want with the Eldora's event ids
@@ -69,7 +70,7 @@ def createDesiredParkingDataFrame():
 
 df_desired_parking = createDesiredParkingDataFrame()
 
-def getAvailability():
+def getAvailability(df):
     y = 0
     for i in range(len(df.index)):
         # Create a url to get a quote id from a list of bookable event ids
@@ -108,23 +109,30 @@ def BookEvent(df):
             # is looped
                 if booking.ok:
                     print(df['name'][y] + ' booked')
-                    df.loc[y, 'Book_Status'] = True
+                    df.loc[y, ['Book_Status']] = True
 
         y += 1
     return df
 
-getAvailability(df_booked_parking)
-#BookEvent(df_booked_parking)
+getAvailability(df_desired_parking)
+BookEvent(df_desired_parking)
 
 # Need to make a loop that will check to see if the count of Book_Status is greater than 7, wait
 # Then go back again and check to see if the parking is available again
 def check_seven_day_restrictions(df):
     for i in range(len(df.index)):
         if len(df['Book_Status'] == True) >= 7:
-            time.sleep(60)
+            time.sleep(1)
 
-        else:
+        if len(df['Book_Status'] == True) < 7:
             getAvailability(df)
             BookEvent(df)
 
-check_seven_day_restrictions(df_booked_parking)
+check_seven_day_restrictions(df_desired_parking)
+
+done=False
+def reserve_parking(df):
+  global done
+  if done: sys.exit(-1)
+  done=True
+#check_seven_day_restrictions(df)
