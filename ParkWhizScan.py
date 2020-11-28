@@ -121,18 +121,11 @@ BookEvent(df_desired_parking)
 # Then go back again and check to see if the parking is available again
 def check_seven_day_restrictions(df):
     for i in range(len(df.index)):
-        if len(df['Book_Status'] == True) >= 7:
+        if df['Book_Status'].sum() >= 7:
             time.sleep(1)
 
-        if len(df['Book_Status'] == True) < 7:
+        if df['Book_Status'].sum() < 7:
             getAvailability(df)
             BookEvent(df)
 
 check_seven_day_restrictions(df_desired_parking)
-
-done=False
-def reserve_parking(df):
-  global done
-  if done: sys.exit(-1)
-  done=True
-#check_seven_day_restrictions(df)
