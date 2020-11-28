@@ -87,7 +87,6 @@ def getAvailability(df):
                 df.loc[z + y, 'quote id'] = q[z]['purchase_options'][0]['id']
                 print('id added')
                 df.loc[z + y, 'id'] = q[z]['_embedded']['pw:event']['id']
-                #df_desired_parking.loc[z + y, 'Book_Status'] = True
 
         y += 1
     return df
@@ -114,18 +113,19 @@ def BookEvent(df):
         y += 1
     return df
 
-getAvailability(df_desired_parking)
-BookEvent(df_desired_parking)
+#getAvailability(df_desired_parking)
+#BookEvent(df_desired_parking)
 
 # Need to make a loop that will check to see if the count of Book_Status is greater than 7, wait
 # Then go back again and check to see if the parking is available again
 def check_seven_day_restrictions(df):
-    for i in range(len(df.index)):
+    while True:
         if df['Book_Status'].sum() >= 7:
-            time.sleep(1)
+            time.sleep(60)
 
         if df['Book_Status'].sum() < 7:
             getAvailability(df)
             BookEvent(df)
+            time.sleep(60)
 
 check_seven_day_restrictions(df_desired_parking)
